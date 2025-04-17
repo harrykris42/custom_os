@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "interrupts.h": "c",
+        "screen64.h": "c",
+        "terminal64.h": "c"
+    }
+}

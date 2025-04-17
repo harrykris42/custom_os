@@ -9,51 +9,16 @@
 // Timer tick counter
 static volatile u64 timer_ticks = 0;
 
-// Timer interrupt handler
+// Timer interrupt handler - simplified to avoid conflicts
 static void timer_callback(registers_t regs) {
     timer_ticks++;
     
-    // Display ticks for debug purposes
-    volatile char* video_mem = (volatile char*)0xB8000 + 11 * 160 + 20 * 2; // Row 11, Col 20
-    
-    // Convert ticks to a string
-    char ticks_str[10];
-    u64 temp = timer_ticks;
-    int i = 0;
-    
-    // Handle 0 case
-    if (temp == 0) {
-        ticks_str[0] = '0';
-        i = 1;
-    } else {
-        // Convert to string (reverse order)
-        while (temp > 0) {
-            ticks_str[i++] = '0' + (temp % 10);
-            temp /= 10;
-        }
-    }
-    
-    // Null terminate
-    ticks_str[i] = '\0';
-    
-    // Reverse the string
-    for (int j = 0; j < i / 2; j++) {
-        char temp = ticks_str[j];
-        ticks_str[j] = ticks_str[i - j - 1];
-        ticks_str[i - j - 1] = temp;
-    }
-    
-    // Display the ticks
-    for (int j = 0; j < i; j++) {
-        video_mem[j*2] = ticks_str[j];
-        video_mem[j*2+1] = 0x0F;
-    }
-    
-    // Clear any remaining characters
-    for (int j = i; j < 10; j++) {
-        video_mem[j*2] = ' ';
-        video_mem[j*2+1] = 0x0F;
-    }
+    // Just a minimal ticker for debugging - write to a single spot
+    volatile u16* vga = (volatile u16*)0xB8000;
+    vga[22 * 80] = 'T' | (0x0F << 8);
+    vga[22 * 80 + 1] = 'i' | (0x0F << 8);
+    vga[22 * 80 + 2] = 'c' | (0x0F << 8);
+    vga[22 * 80 + 3] = 'k' | (0x0F << 8);
 }
 
 // Initialize the timer with a specific frequency

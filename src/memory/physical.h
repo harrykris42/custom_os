@@ -18,4 +18,10 @@ void pmm_free_page(u64 addr);
 // Get the total number of free pages
 u64 pmm_get_free_pages();
 
+// Get the total number of pages
+u64 pmm_get_total_pages();
+
+// Get memory usage statistics
+void pmm_get_stats(u64* total, u64* free, u64* used);
+
 #endif

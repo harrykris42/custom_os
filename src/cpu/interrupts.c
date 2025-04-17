@@ -107,40 +107,17 @@ void isr_handler(registers_t regs) {
 }
 
 // Common handler for all IRQs
+// In interrupts.c or wherever your IRQ handler is defined
 void irq_handler(registers_t regs) {
-    // Debug output
-    volatile char* video_mem = (volatile char*)0xB8000 + 21 * 160; // Row 21
-    const char* msg = "IRQ called: ";
-    int i = 0;
-    while (msg[i]) {
-        video_mem[i*2] = msg[i];
-        video_mem[i*2+1] = 0x0F;
-        i++;
-    }
+    // Don't print any debug messages
     
-    // Convert the IRQ number to a string
-    char num_str[3] = "00";
-    if (regs.int_no < 40) {
-        num_str[0] = '0';
-        num_str[1] = '0' + (regs.int_no - 32);
-    } else {
-        num_str[0] = '0' + ((regs.int_no - 32) / 10);
-        num_str[1] = '0' + ((regs.int_no - 32) % 10);
-    }
-    
-    // Display the IRQ number
-    video_mem[i*2] = num_str[0];
-    video_mem[i*2+1] = 0x0F;
-    video_mem[(i+1)*2] = num_str[1];
-    video_mem[(i+1)*2+1] = 0x0F;
-    
-    // Send an EOI (End of Interrupt) signal to the PICs
+    // Send EOI (End of Interrupt) to the PICs
     if (regs.int_no >= 40) {
         port_byte_out(0xA0, 0x20);  // Send EOI to slave PIC
     }
-    port_byte_out(0x20, 0x20);  // Send EOI to master PIC
+    port_byte_out(0x20, 0x20);      // Send EOI to master PIC
     
-    // Call the interrupt handler if one exists
+    // Call handler if one exists
     if (interrupt_handlers[regs.int_no]) {
         interrupt_handlers[regs.int_no](regs);
     }
@@ -235,6 +212,8 @@ void interrupts_init() {
     // Unmask all interrupts
     port_byte_out(0x21, 0x00);  // Enable all on master
     port_byte_out(0xA1, 0x00);  // Enable all on slave
+    // Unmask the keyboard interrupt
+    port_byte_out(0x21, port_byte_in(0x21) & ~(1 << 1));  // Unmask IRQ1 (keyboard)
     
     // Load the IDT
     __asm__ __volatile__("lidt %0" : : "m"(idt_ptr));

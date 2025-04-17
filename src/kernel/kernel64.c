@@ -4,6 +4,45 @@
 #include "../cpu/interrupts.h"
 #include "../drivers/timer.h"
 #include "../drivers/keyboard.h"
+#include "../drivers/screen64.h"
+#include "../terminal/terminal64.h"
+#include "../kernel/low_level.h"
+
+// Simple function to test direct keyboard input
+void test_keyboard_input() {
+    // Status of keyboard controller
+    u8 status = port_byte_in(0x64);
+    
+    // Debug output directly to video memory
+    volatile u16* video_mem = (volatile u16*)0xB8000;
+    
+    // Display status byte
+    char status_hex[3];
+    status_hex[0] = "0123456789ABCDEF"[(status >> 4) & 0x0F];
+    status_hex[1] = "0123456789ABCDEF"[status & 0x0F];
+    
+    video_mem[14 * 80] = 'K' | (0x0F << 8);
+    video_mem[14 * 80 + 1] = 'B' | (0x0F << 8);
+    video_mem[14 * 80 + 2] = 'D' | (0x0F << 8);
+    video_mem[14 * 80 + 3] = ':' | (0x0F << 8);
+    video_mem[14 * 80 + 4] = status_hex[0] | (0x0F << 8);
+    video_mem[14 * 80 + 5] = status_hex[1] | (0x0F << 8);
+    
+    // Check if data is available
+    if (status & 1) {
+        u8 data = port_byte_in(0x60);
+        
+        // Display data byte
+        char data_hex[3];
+        data_hex[0] = "0123456789ABCDEF"[(data >> 4) & 0x0F];
+        data_hex[1] = "0123456789ABCDEF"[data & 0x0F];
+        
+        video_mem[14 * 80 + 7] = 'D' | (0x0F << 8);
+        video_mem[14 * 80 + 8] = ':' | (0x0F << 8);
+        video_mem[14 * 80 + 9] = data_hex[0] | (0x0F << 8);
+        video_mem[14 * 80 + 10] = data_hex[1] | (0x0F << 8);
+    }
+}
 
 // Function to write a string directly to video memory
 void print(const char* str, int row) {
@@ -60,61 +99,49 @@ void kernel_main() {
     }
     
     // Display welcome message
-    print("CustomOS 64-bit - Kernel Initialized", 0);
-    print("----------------------------------------", 1);
     
     // Initialize physical memory manager
-    print("Initializing physical memory manager...", 2);
     pmm_init(128 * 1024 * 1024); // Assume 128MB RAM
-    print("Physical memory manager initialized!", 2);
     
     // Initialize memory allocator
-    print("Initializing memory allocator...", 3);
     kmalloc_init();
-    print("Memory allocator initialized!", 3);
     
-    // Initialize interrupt system
-    print("Initializing interrupt system...", 4);
+    // Initialize interrupt system;
     interrupts_init();
-    print("Interrupt system initialized!", 4);
     
     // Initialize timer (100Hz)
-    print("Initializing timer...", 5);
     timer_init(100);
-    print("Timer initialized! (100Hz)", 5);
     
     // Initialize keyboard
-    print("Initializing keyboard...", 6);
     keyboard_init();
-    print("Keyboard initialized!", 6);
     
     // Testing memory allocation
-    print("Testing memory allocation...", 8);
     void* ptr1 = kmalloc(1024);
     void* ptr2 = kmalloc(2048);
     void* ptr3 = kmalloc(4096);
     kfree(ptr2);
     void* ptr4 = kmalloc(1024);
-    print("Memory allocation successful!", 8);
     
-    // Interactive section
-    print("System is now running. Press keys to test the keyboard.", 10);
-    print("Current timer ticks: 0", 11);
+    // Initialize screen
+    screen_init();
     
-    // Main loop
-    u64 last_tick = 0;
+    // Wait a moment
+    for (u64 i = 0; i < 50000000; i++) {
+        __asm__ __volatile__("nop");
+    }
+    
+    // Initialize terminal
+    terminal_init();
+
+    // Main loop with both interrupt-based and direct polling
     while (1) {
-        // Update timer display if ticks have changed
-        u64 current_ticks = timer_get_ticks();
-        if (current_ticks != last_tick) {
-            last_tick = current_ticks;
-            char tick_str[20];
-            int_to_string(current_ticks, tick_str);
-            print("Current timer ticks: ", 11);
-            print(tick_str, 11);
-        }
+        // Poll keyboard (no debug output)
+        keyboard_poll();
         
-        // Halt CPU until next interrupt
-        __asm__ __volatile__("hlt");
+        // Process any keys through the terminal
+        terminal_update();
+        
+        // Small delay to reduce CPU usage
+        for (volatile int i = 0; i < 10000; i++);
     }
 }
