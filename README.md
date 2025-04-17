@@ -32,3 +32,6 @@
 
 ```bash
 make clean && make && make run
+```
+
+🔗 Featured on [LinkedIn](https://www.linkedin.com/posts/harikrishnan-kodakkad-414875294_osdev-assembly-linux-activity-7318582443366576128-RTsa?utm_source=share&utm_medium=member_desktop&rcm=ACoAAEdRuxABwzwUE2nAtof4sSYLVycoA0jPQgk)
