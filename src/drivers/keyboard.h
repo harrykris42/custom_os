@@ -6,16 +6,22 @@
 // Initialize the keyboard
 void keyboard_init();
 
-void keyboard_direct_test();
+// Poll keyboard for input
+void keyboard_poll();
 
 // Get the last pressed key (ASCII value)
 char keyboard_get_last_key();
 
-// Wait for a key press and return its ASCII value
-char keyboard_wait_for_key();
+// Return current shift state
+bool keyboard_is_shift_pressed();
 
-void keyboard_test_direct();
+// Return current caps lock state
+bool keyboard_is_caps_lock_on();
 
-void keyboard_poll();
+// Check if key is left arrow
+bool keyboard_is_left_arrow(char key);
+
+// Check if key is right arrow
+bool keyboard_is_right_arrow(char key);
 
 #endif

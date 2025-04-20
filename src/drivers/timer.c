@@ -12,13 +12,6 @@ static volatile u64 timer_ticks = 0;
 // Timer interrupt handler - simplified to avoid conflicts
 static void timer_callback(registers_t regs) {
     timer_ticks++;
-    
-    // Just a minimal ticker for debugging - write to a single spot
-    volatile u16* vga = (volatile u16*)0xB8000;
-    vga[22 * 80] = 'T' | (0x0F << 8);
-    vga[22 * 80 + 1] = 'i' | (0x0F << 8);
-    vga[22 * 80 + 2] = 'c' | (0x0F << 8);
-    vga[22 * 80 + 3] = 'k' | (0x0F << 8);
 }
 
 // Initialize the timer with a specific frequency

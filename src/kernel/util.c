@@ -1,4 +1,5 @@
 #include "util.h"
+#include "../include/types.h"
 
 void memory_copy(char* source, char* dest, int nbytes) {
     for (int i = 0; i < nbytes; i++) {
@@ -40,5 +41,24 @@ void int_to_str(int n, char str[]) {
     if (sign < 0) str[i++] = '-';
     str[i] = '\0';
     
+    reverse(str);
+}
+
+void uint64_to_str(u64 n, char str[]) {
+    int i = 0;
+    
+    // Handle special case for zero
+    if (n == 0) {
+        str[0] = '0';
+        str[1] = '\0';
+        return;
+    }
+    
+    // Convert digits
+    do {
+        str[i++] = n % 10 + '0';
+    } while ((n /= 10) > 0);
+    
+    str[i] = '\0';
     reverse(str);
 }

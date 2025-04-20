@@ -6,6 +6,7 @@ ASM = nasm
 
 # 64-bit targets
 C_SOURCES_64 = src/kernel/kernel64.c \
+               src/kernel/util.c \
                src/memory/physical.c \
                src/memory/kmalloc.c \
                src/kernel/low_level.c \
@@ -59,9 +60,12 @@ screen64.o: src/drivers/screen64.c $(HEADERS_64)
 terminal64.o: src/terminal/terminal64.c $(HEADERS_64)
 	$(CC) $(CFLAGS_64) src/terminal/terminal64.c -o terminal64.o
 
+util.o: src/kernel/util.c $(HEADERS_64)
+	$(CC) $(CFLAGS_64) src/kernel/util.c -o util.o
+
 # Link everything together
-kernel-64.bin: kernel_entry-64.o interrupt_stubs.o kernel64.o physical.o kmalloc.o low_level.o interrupts.o timer.o keyboard.o screen64.o terminal64.o
-	$(LD) -m elf_x86_64 -o kernel-64.bin -Ttext 0x1000 kernel_entry-64.o interrupt_stubs.o kernel64.o physical.o kmalloc.o low_level.o interrupts.o timer.o keyboard.o screen64.o terminal64.o --oformat binary
+kernel-64.bin: kernel_entry-64.o interrupt_stubs.o kernel64.o physical.o kmalloc.o low_level.o interrupts.o timer.o keyboard.o screen64.o terminal64.o util.o
+	$(LD) -m elf_x86_64 -o kernel-64.bin -Ttext 0x1000 kernel_entry-64.o interrupt_stubs.o kernel64.o physical.o kmalloc.o low_level.o interrupts.o timer.o keyboard.o screen64.o terminal64.o util.o --oformat binary
 
 os-image-64: boot-64.bin kernel-64.bin
 	dd if=/dev/zero of=os-image-64.bin bs=512 count=2880

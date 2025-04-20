@@ -72,33 +72,9 @@ static void idt_set_gate(u8 num, u64 handler, u16 selector, u8 flags) {
     idt[num].reserved = 0;
 }
 
-// Common handler for all ISRs
+// Common handler for all ISRs - MODIFIED to not write to screen
 void isr_handler(registers_t regs) {
-    // Debug output
-    volatile char* video_mem = (volatile char*)0xB8000 + 20 * 160; // Row 20
-    const char* msg = "ISR called: ";
-    int i = 0;
-    while (msg[i]) {
-        video_mem[i*2] = msg[i];
-        video_mem[i*2+1] = 0x0F;
-        i++;
-    }
-    
-    // Convert the interrupt number to a string
-    char num_str[3] = "00";
-    if (regs.int_no < 10) {
-        num_str[0] = '0';
-        num_str[1] = '0' + regs.int_no;
-    } else {
-        num_str[0] = '0' + (regs.int_no / 10);
-        num_str[1] = '0' + (regs.int_no % 10);
-    }
-    
-    // Display the interrupt number
-    video_mem[i*2] = num_str[0];
-    video_mem[i*2+1] = 0x0F;
-    video_mem[(i+1)*2] = num_str[1];
-    video_mem[(i+1)*2+1] = 0x0F;
+    // Remove debug output to screen
     
     // Call the interrupt handler if one exists
     if (interrupt_handlers[regs.int_no]) {
@@ -106,11 +82,8 @@ void isr_handler(registers_t regs) {
     }
 }
 
-// Common handler for all IRQs
-// In interrupts.c or wherever your IRQ handler is defined
+// Common handler for all IRQs - MODIFIED to not write to screen
 void irq_handler(registers_t regs) {
-    // Don't print any debug messages
-    
     // Send EOI (End of Interrupt) to the PICs
     if (regs.int_no >= 40) {
         port_byte_out(0xA0, 0x20);  // Send EOI to slave PIC
@@ -192,7 +165,7 @@ void interrupts_init() {
     idt_set_gate(46, (u64)irq14, 0x08, 0x8E);
     idt_set_gate(47, (u64)irq15, 0x08, 0x8E);
     
-    // Remap the PIC
+   // Remap the PIC
     // Initialize the PICs
     port_byte_out(0x20, 0x11);  // Initialize master PIC
     port_byte_out(0xA0, 0x11);  // Initialize slave PIC
@@ -212,36 +185,10 @@ void interrupts_init() {
     // Unmask all interrupts
     port_byte_out(0x21, 0x00);  // Enable all on master
     port_byte_out(0xA1, 0x00);  // Enable all on slave
-    // Unmask the keyboard interrupt
-    port_byte_out(0x21, port_byte_in(0x21) & ~(1 << 1));  // Unmask IRQ1 (keyboard)
     
     // Load the IDT
     __asm__ __volatile__("lidt %0" : : "m"(idt_ptr));
     
     // Enable interrupts
     __asm__ __volatile__("sti");
-    
-    // Debug output to confirm initialization
-    volatile char* video_mem = (volatile char*)0xB8000 + 15 * 160;
-    const char* msg = "Interrupts enabled. IDT loaded at: ";
-    int i = 0;
-    while (msg[i]) {
-        video_mem[i*2] = msg[i];
-        video_mem[i*2+1] = 0x0F;
-        i++;
-    }
-    
-    // Display IDT address
-    char addr_str[17];
-    u64 addr = (u64)&idt;
-    for (int j = 0; j < 16; j++) {
-        int digit = (addr >> (60 - j*4)) & 0xF;
-        addr_str[j] = digit < 10 ? '0' + digit : 'A' + (digit - 10);
-    }
-    addr_str[16] = '\0';
-    
-    for (int j = 0; j < 16; j++) {
-        video_mem[(i+j)*2] = addr_str[j];
-        video_mem[(i+j)*2+1] = 0x0F;
-    }
 }
